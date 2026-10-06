@@ -1,13 +1,13 @@
 # Umsetzungsplan – Nutrient Solution Manager
 
 Stand: 2026-10-06. Grundlage ist [`pflichtenheft.md`](pflichtenheft.md) (Entwurf vom 2026-10-05, Kapitel 1 bis 19). Beide Dokumente liegen in `docs/`.
-Fachcode beginnt mit Schritt 1.1. Vom Altprojekt wird kein Code übernommen.
+Das Paketgerüst aus Schritt 1.1 steht. Vom Altprojekt wird kein Code übernommen.
 
 Dieser Plan zerlegt die Meilensteine M1 bis M9 in Schritte, die nacheinander abgearbeitet werden.
 Ein Schritt ist fertig, wenn seine eigenen Tests grün sind und die Werkzeugkette nichts meldet.
 Erst dann beginnt der nächste Schritt.
 
-**Nächster Schritt: 1.1**
+**Nächster Schritt: 1.2**
 
 ---
 
@@ -116,7 +116,7 @@ Reihenfolge innerhalb der Phase ist verbindlich: Uhr und Datenbank vor der App, 
 
 ### Schritt 1.1 – Werkzeugkette und Paketgerüst
 
-Status: offen
+Status: erledigt
 
 Ziel: `uv sync` erzeugt eine Umgebung, in der die späteren Prüfbefehle überhaupt starten.
 

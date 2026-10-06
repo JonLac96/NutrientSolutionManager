@@ -1387,6 +1387,7 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
 )
 
+
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragmas(dbapi_connection, _):
     cursor = dbapi_connection.cursor()
@@ -1541,6 +1542,7 @@ Der Router-Import erfolgt ausdrücklich über den Router, nicht über das Modul:
 
 ```python
 from app.api.routers.growth_stages import router as growth_stages_router
+
 app.include_router(growth_stages_router)
 ```
 
