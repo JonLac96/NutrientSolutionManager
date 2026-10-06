@@ -1,0 +1,13 @@
+.env
+.venv/
+nsm.db
+nsm.db-wal
+nsm.db-shm
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/

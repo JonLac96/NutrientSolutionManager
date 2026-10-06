@@ -1,13 +1,13 @@
 # Umsetzungsplan – Nutrient Solution Manager
 
-Stand: 2026-10-06. Grundlage ist `pflichtenheft.md` (Entwurf vom 2026-10-05, Kapitel 1 bis 19).
-Dieses Repository enthält derzeit nur das Pflichtenheft. Vom Altprojekt wird kein Code übernommen.
+Stand: 2026-10-06. Grundlage ist [`pflichtenheft.md`](pflichtenheft.md) (Entwurf vom 2026-10-05, Kapitel 1 bis 19). Beide Dokumente liegen in `docs/`.
+Fachcode beginnt mit Schritt 1.1. Vom Altprojekt wird kein Code übernommen.
 
 Dieser Plan zerlegt die Meilensteine M1 bis M9 in Schritte, die nacheinander abgearbeitet werden.
 Ein Schritt ist fertig, wenn seine eigenen Tests grün sind und die Werkzeugkette nichts meldet.
 Erst dann beginnt der nächste Schritt.
 
-**Nächster Schritt: 0.1**
+**Nächster Schritt: 1.1**
 
 ---
 
@@ -91,7 +91,7 @@ Kapitel 17 wird nicht eingeplant.
 
 ### Schritt 0.1 – Grundlagen laut Kapitel 19
 
-Status: offen
+Status: erledigt
 
 Ziel: ein sauberer Ausgangspunkt, bevor Fachcode entsteht.
 
@@ -101,7 +101,7 @@ Umsetzen:
 - `AGENTS.md` ersetzen beziehungsweise anlegen: der Agent implementiert und erklärt nur auf Nachfrage (Kapitel 2.4). Keine Mentorenrolle, kein Lernpfad.
 - `.gitignore` für `.env`, `.venv`, `nsm.db`, `nsm.db-wal`, `nsm.db-shm`, `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, Coverage-Dateien.
 - `.gitattributes` mit `* text=auto eol=lf` und `*.ps1 text eol=crlf`.
-- `.env.example` mit den vier Variablen aus Kapitel 10.4.
+- `.env.example` mit den fünf Variablen aus Kapitel 10.4.
 - `pflichtenheft.md` nach `docs/pflichtenheft.md` verschieben. Diesen Plan nach `docs/umsetzungsplan.md` verschieben. Verweise in beiden Dateien auf den neuen Ort prüfen.
 
 Fertig, wenn die Dateien am beschriebenen Ort liegen und kein Fachpaket existiert.
