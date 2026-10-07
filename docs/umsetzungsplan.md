@@ -63,6 +63,7 @@ Diese Punkte stehen im Pflichtenheft, gehen aber leicht unter, wenn ein Schritt 
 | Dosierreihenfolge (O-1) | Der Seed legt A, B, C mit `dose_order` 0, 1, 2 an. Eine chemische Reihenfolge ist damit nicht entschieden. |
 | Lizenz | Keine Lizenzdatei anlegen, solange keine genannt ist. |
 | CI auf ARM64 | Öffentliches Repository: `test-arm64` bei jedem Push. Privates Repository: `test-arm64` nur auf `main`, `test-x64` bei jedem Push. |
+| Startmedium am Pi | Bis M7 die SD-Karte im Pi. USB-SSD erst zum Dauerbetrieb. Einkauf und Preisgrenze stehen in [`hardware.md`](hardware.md). |
 
 Offen bleiben und den Start nicht aufhalten: O-3 (Stilllegen statt Löschen, vor M4 entscheiden), O-7, O-9, O-10, O-11 (alle vor M9). O-4 ist entschieden: die tatsächlich dosierte Menge ist Pflicht und mit der Empfehlung vorbelegt.
 
@@ -989,7 +990,7 @@ Umsetzen:
 
 Fertig, wenn die Einheitenvorlage im Repository liegt und die automatischen Tests grün sind. Die echte Installation auf dem Pi wird einmal ausgeführt und im README beschrieben, nicht von der CI.
 
-Bezug: Kapitel 14.2, 14.3, B-1, B-2.
+Bezug: Kapitel 14.2, 14.3, B-1, B-2. Das Startmedium für diesen Dauerbetrieb ist in [`hardware.md`](hardware.md) festgehalten.
 
 ---
 
