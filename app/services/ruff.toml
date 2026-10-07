@@ -1,0 +1,5 @@
+extend = "../../pyproject.toml"
+
+[lint.flake8-tidy-imports.extend-banned-api]
+"fastapi".msg = "Services importieren kein FastAPI."
+"starlette".msg = "Services importieren kein Starlette."

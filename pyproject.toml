@@ -36,8 +36,9 @@ package = true
 target-version = "py313"
 src = ["app", "tests", "tools"]
 
+# Schichtverbote stehen in den ruff.toml von app/calculations, app/services und app/models.
 [tool.ruff.lint]
-select = ["E", "F", "I", "DTZ"]
+select = ["E", "F", "I", "DTZ", "TID251"]
 
 [tool.mypy]
 python_version = "3.13"

@@ -1,0 +1,7 @@
+extend = "../../pyproject.toml"
+
+[lint.flake8-tidy-imports.extend-banned-api]
+"sqlalchemy".msg = "Berechnungen importieren kein SQLAlchemy."
+"app.models".msg = "Berechnungen importieren keine Models."
+"app.api".msg = "Berechnungen importieren keine API."
+"app.services".msg = "Berechnungen importieren keine Services."

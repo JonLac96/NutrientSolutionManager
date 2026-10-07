@@ -1,0 +1,5 @@
+extend = "../../pyproject.toml"
+
+[lint.flake8-tidy-imports.extend-banned-api]
+"app.schemas".msg = "Models importieren keine Schemas."
+"fastapi".msg = "Models importieren kein FastAPI."

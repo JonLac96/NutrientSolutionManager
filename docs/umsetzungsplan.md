@@ -7,7 +7,7 @@ Dieser Plan zerlegt die Meilensteine M1 bis M9 in Schritte, die nacheinander abg
 Ein Schritt ist fertig, wenn seine eigenen Tests grün sind und die Werkzeugkette nichts meldet.
 Erst dann beginnt der nächste Schritt.
 
-**Nächster Schritt: 1.2**
+**Nächster Schritt: 2.1**
 
 ---
 
@@ -138,7 +138,7 @@ Bezug: Kapitel 4.1, 11.1, 13.1.
 
 ### Schritt 1.2 – Konfiguration
 
-Status: offen
+Status: erledigt
 
 Ziel: alle Umgebungswerte an einer Stelle, mit den Standards aus Kapitel 10.4.
 
@@ -154,7 +154,7 @@ Bezug: Kapitel 10.4.
 
 ### Schritt 1.3 – Uhr und Zeitstempel
 
-Status: offen
+Status: erledigt
 
 Ziel: jeder gespeicherte Zeitpunkt kommt zeitzonenbehaftet in UTC zurück und ist mit `utcnow()` vergleichbar.
 
@@ -170,7 +170,7 @@ Bezug: Kapitel 11.3, AK-1.8. Der Test darf dafür eine nur im Test existierende 
 
 ### Schritt 1.4 – Engine, Pragmas, Session
 
-Status: offen
+Status: erledigt
 
 Ziel: jede Verbindung prüft Fremdschlüssel und schreibt im WAL-Modus.
 
@@ -186,7 +186,7 @@ Bezug: Kapitel 10.1, 10.2, AK-1.3.
 
 ### Schritt 1.5 – Testinfrastruktur
 
-Status: offen
+Status: erledigt
 
 Ziel: die Regeln T-1 bis T-7 sind ab hier der einzige Weg, die Datenbank in Tests zu benutzen.
 
@@ -204,7 +204,7 @@ Bezug: Kapitel 12.2, 12.3, AK-1.4.
 
 ### Schritt 1.6 – Fehlerklassen und einheitliches Fehlerformat
 
-Status: offen
+Status: erledigt
 
 Ziel: Fachfehler werden an einer Stelle zu HTTP, Router brauchen kein `try/except`.
 
@@ -221,7 +221,7 @@ Bezug: Kapitel 11.4, 9.5, 9.6, AK-1.7.
 
 ### Schritt 1.7 – Anwendung, Health, Version, Startreihenfolge
 
-Status: offen
+Status: erledigt
 
 Ziel: die App startet, prüft die Datenbank und nennt Version und Startzeit.
 
@@ -239,7 +239,7 @@ Bezug: Kapitel 9.0, 10.3, 13.4, AK-1.2, AK-1.9, AK-1.10.
 
 ### Schritt 1.8 – Alembic, Architekturregeln, CI, Abnahme M1
 
-Status: offen
+Status: erledigt
 
 Ziel: M1 ist gegen AK-1.1 bis AK-1.11 geprüft, soweit die Prüfung nicht den Raspberry Pi oder ein einmaliges CI-Experiment braucht.
 

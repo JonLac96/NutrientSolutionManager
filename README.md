@@ -4,13 +4,30 @@ Der Nutrient Solution Manager pflegt Stammdaten von Pflanzen, Düngern und Tanks
 
 Die technische Festlegung steht in [`docs/pflichtenheft.md`](docs/pflichtenheft.md), die schrittweise Abarbeitung in [`docs/umsetzungsplan.md`](docs/umsetzungsplan.md).
 
-Die Anwendung ist noch nicht angelegt. Die folgenden Befehle stammen aus Kapitel 14.1 des Pflichtenhefts und werden mit Schritt 1.8 lauffähig:
+## Voraussetzungen
+
+- Python 3.13
+- [uv](https://docs.astral.sh/uv/)
+
+## Einrichtung und Start
 
 ```powershell
 uv sync
 uv run alembic upgrade head
-uv run python -m tools.seed        # optional, Beispieldaten
 uv run fastapi dev app/main.py
 ```
 
-Danach liegt die API-Dokumentation unter dem Pfad `/docs` der laufenden Anwendung und bleibt bis Meilenstein M6 die Bedienoberfläche.
+Die API-Dokumentation liegt unter `/docs` und ist bis Meilenstein M6 die Bedienoberfläche.
+
+## Tests und Prüfung
+
+```powershell
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy app
+uv run pytest
+```
+
+## Architektur
+
+Die API importiert Models nur als Typannotationen von Rückgabewerten. Fachentscheidungen bleiben im Service.
