@@ -54,19 +54,24 @@ Diese Punkte stehen im Pflichtenheft, gehen aber leicht unter, wenn ein Schritt 
 | Uhr | `utcnow()` liest eine austauschbare Uhr in `app/core/time.py`. Tests stellen die Uhr vor, statt `datetime.now()` zu streuen. Das ist die Voraussetzung für Simulationsstufe 2. |
 | Leere Datenbank in M1 | Die erste Alembic-Revision hat noch keine Fachtabelle. Der Starttest prüft, dass `upgrade head` durchläuft, die Revisionszeile steht und `GET /health` danach 200 liefert. |
 | Nachweis für `NotFoundError` in M1 | Der Test hängt eine Route nur für diesen Test an die App. In der Anwendung gibt es dafür keinen Platzhalter-Endpunkt. |
-| pH-Mittel auswählen | `CompensationPH` sucht Mittel nach Richtung. Genau eines wird verwendet. Keines oder mehrere: der Job endet als `failed` mit einer klaren Meldung. Eine Geräte- oder Tankzuordnung kommt erst, wenn O-9 das verlangt. |
+| pH-Mittel auswählen | `CompensationPH` sucht Mittel nach Richtung. Genau eines wird verwendet. Keines oder mehrere: der Job endet als `failed` mit einer klaren Meldung. Die Knoten und Abläufe sind O-9 und stehen in Kapitel 9.7. |
 | Volumen über dem Ziel | Die Bewertung weist es aus. Einen Job gibt es dafür nicht. Ablassen ist nicht modelliert. Handlungsbedarf besteht bei Volumen unter dem Ziel. |
 | Eingabe beendet den Job | `POST /jobs/{id}/input` schließt den wartenden Job ab und reiht nichts zusätzlich ein. Der nächste Job startet über `POST /jobs/dispatch`. Einzige Ausnahme ist der Zyklusstart: der legt `MeasureProbe` und `CompareProbe` an und führt `MeasureProbe` sofort aus. |
-| Weboberfläche (O-5) | Annahme bis zur ausdrücklichen anderen Entscheidung: serverseitige Vorlagen mit Jinja2 und HTMX, ausgeliefert vom selben FastAPI-Prozess. Diagramme über eine kleine Bibliothek ohne eigenen Build. Begründung: ein Betreiber, eine Auslieferung, ein Prozess auf SQLite. Vor Schritt 6.1 kurz bestätigen. |
-| Wasserwechsel (O-6) | Annahme: nur Hinweis, kein Blockieren des Zyklus. Vor Schritt 7.4 kurz bestätigen. |
-| Sicherheitsgrenzen im Seed (O-2) | Platzhalter, keine Empfehlung für einen echten Tank: Ziel 30 l, Maximum 40 l, `source_water_ec` 0,3, Stabilisierung 120 s, Wasser 20 l, Dünger 500 ml, pH-Mittel 50 ml, 3 Versuche, Zyklusdauer 1440 min. |
-| Dosierreihenfolge (O-1) | Der Seed legt A, B, C mit `dose_order` 0, 1, 2 an. Eine chemische Reihenfolge ist damit nicht entschieden. |
+| Weboberfläche (O-5) | Entschieden am 2026-10-07: Jinja2 und HTMX, ausgeliefert vom selben FastAPI-Prozess. Diagramme über eine kleine Bibliothek ohne eigenen Build. |
+| Wasserwechsel (O-6) | Entschieden am 2026-10-07: nur Hinweis. Der Zyklus startet trotzdem. |
+| Sicherheitsgrenzen im Seed (O-2) | Entschieden am 2026-10-07. Platzhalter, keine Empfehlung für einen echten Tank: Ziel 30 l, Maximum 40 l, `source_water_ec` 0,3, Stabilisierung 120 s, Wasser 20 l, Dünger 500 ml, pH-Mittel 50 ml, 3 Versuche, Zyklusdauer 1440 min. |
+| Dosierreihenfolge (O-1) | Entschieden am 2026-10-07: kein konkretes Düngersystem. Der Seed legt A, B, C mit `dose_order` 0, 1, 2 an. |
+| Stilllegen (O-3) | Entschieden am 2026-10-07: `retired_at` am Tank. Löschen bleibt `RESTRICT`. Ein stillgelegter Tank nimmt keinen neuen Zyklus an. |
+| Temperatur (O-7) | Entschieden am 2026-10-07: `ec_uncompensated` am Gerät, Standard `false`. Die Formel aus 8.5 gilt nur bei `true`. |
+| Geräte (O-9) | Geändert am 2026-10-07: Knoten, Punkte und Abläufe als Stammdaten in M9. Themen über `device_id`. Ein Dosierjob im Modus `automatic` führt den hinterlegten Ablauf aus. Geteilte Anlagengeräte bleiben belegt, bis die Abschlussfolge fertig ist. |
+| MQTT (O-10) | Entschieden am 2026-10-07: ohne Anmeldedaten und ohne TLS, nur im abgeschotteten Heimnetz. |
+| Fristen (O-11) | Entschieden am 2026-10-07: die fünf Fristspalten am Tank, Standards aus Kapitel 9.7. |
 | Lizenz | Keine Lizenzdatei anlegen, solange keine genannt ist. |
 | CI auf ARM64 | Öffentliches Repository: `test-arm64` bei jedem Push. Privates Repository: `test-arm64` nur auf `main`, `test-x64` bei jedem Push. |
 | Stichprobe auf dem Pi (AK-1.1b) | Entfällt, entschieden am 2026-10-07. Die ARM64-CI deckt die Architektur ab. Eine einmalige Suite auf dem Betriebs-Pi wird nicht gefahren. Prüfungen, die nur das echte Gerät leisten kann, bleiben bei ihrem Meilenstein: Dienststart ab M7, Hardware ab M9. |
 | Startmedium am Pi | Bis M7 die SD-Karte im Pi. USB-SSD erst zum Dauerbetrieb. Einkauf und Preisgrenze stehen in [`hardware.md`](hardware.md). |
 
-Offen bleiben und den Start nicht aufhalten: O-3 (Stilllegen statt Löschen, vor M4 entscheiden), O-7, O-9, O-10, O-11 (alle vor M9). O-4 ist entschieden: die tatsächlich dosierte Menge ist Pflicht und mit der Empfehlung vorbelegt.
+Offen bleibt O-8: `projektkonzept.md` liegt nicht im Repository. O-4 ist entschieden: die tatsächlich dosierte Menge ist Pflicht und mit der Empfehlung vorbelegt. O-1 bis O-3 und O-5 bis O-7 sowie O-9 bis O-11 sind am 2026-10-07 entschieden.
 
 ---
 
@@ -537,10 +542,9 @@ Ziel: ein Prozessabbruch hinterlässt keinen Job dauerhaft in `running`.
 Umsetzen:
 
 - `recover_interrupted_jobs()` wird im Lebenszyklus nach der Migration und vor der ersten Anfrage aufgerufen.
-- `MeasureProbe` und `CompareProbe` von `running` zurück auf `pending`.
-- `DoseFertilizer`, und sobald sie existieren `DosePhAdjuster` und `AdjustVolume`, auf `failed`, Zyklus auf `failed`, `failure_reason` nennt den Abbruch und die ungewisse Menge. Der Job wird nicht erneut ausgeführt.
-- `Mix` auf `failed` mit derselben Zyklusfolge.
-- `waiting_input`, `waiting_device`, `blocked` und `pending` bleiben unverändert.
+- `MeasureProbe` und `CompareProbe` von `running` und von `waiting_device` zurück auf `pending`.
+- `DoseFertilizer`, und sobald sie existieren `DosePhAdjuster`, `AdjustVolume`, `Mix` und `DeviceCommand`, von `running` und von `waiting_device` auf `failed`, Zyklus auf `failed`, `failure_reason` nennt den Abbruch und die ungewisse Menge. Der Job wird nicht erneut ausgeführt. Eine Abschlussfolge wird veröffentlicht, sobald für den Jobtyp ein Ablauf existiert.
+- `waiting_input`, `blocked` und `pending` bleiben unverändert.
 - Die Regel hängt am Jobtyp, nicht an verstreuten Sonderfällen, damit Phase 4 die neuen Dosierjobs nur in diese Tabelle einträgt.
 
 Fertig, wenn AK-3.23 grün ist.
@@ -557,6 +561,7 @@ Umsetzen:
 
 - `POST /tanks/{id}/cycles` mit Modus und Auslöser. In M3 ist der fachlich unterstützte Modus `advisory`. `simulation` und `automatic` werden mit 422 abgelehnt, bis Phase 5 beziehungsweise Phase 9 sie können. Den Enum-Wert trotzdem schon speichern zu können, bleibt erlaubt; der Start-Endpunkt lehnt die noch nicht umgesetzten Modi ab.
 - Zweiter laufender Zyklus desselben Tanks: 409.
+- Stillgelegter Tank (`retired_at` gesetzt): 409, kein Zyklus.
 - Anlegen von `MeasureProbe` und `CompareProbe`, `parent_job_id` des Compare-Jobs zeigt auf die Messung. Erster Job wird in derselben Einheit sofort ausgeführt.
 - `MeasureProbe` im Modus `advisory`: Zustand `waiting_input`, noch keine Messung.
 - Parameter beider Jobs enthalten `tank_id`.
@@ -770,7 +775,7 @@ Umsetzen:
 - API-Durchlauf: Volumen, EC und pH gleichzeitig außerhalb. Erster Compare erzeugt nur `AdjustVolume`. Nach der nächsten Messung nur die EC-Korrektur. Danach nur die pH-Korrektur (AK-4.5).
 - Ein Zyklus mit drei EC-Korrekturen und einer pH-Korrektur läuft weiter (AK-4.6).
 - AK-4.7 für S-1, S-3, S-4 und S-5 auf Jobebene, ergänzend zum S-2-Test aus 4.3.
-- Vor diesem Schritt O-3 klären. Bis zur Entscheidung kein Stilllege-Feld anlegen.
+- O-3 ist entschieden. `retired_at` kommt mit dem Tank in Schritt 2.7. Der Zyklusstart lehnt einen stillgelegten Tank ab, geprüft in Schritt 3.6.
 
 Fertig, wenn AK-4.1 bis AK-4.8 grün sind.
 
@@ -827,7 +832,7 @@ Umsetzen:
 
 - `complete_job(job_id, request_id, payload)` prüft: Job ist `waiting_device`, `request_id` stimmt. Sonst wird die Antwort protokolliert und verworfen (G-3, G-4).
 - Stufe 2 setzt den Job auf `waiting_device`, vergibt `request_id` und `timeout_at` und legt die Antwort zeitversetzt bereit. Tests stellen die Uhr vor.
-- Fristen aus Kapitel 9.7: Messung 30 s, Mix Dauer plus 30 s, Dünger und pH-Mittel 120 s, Volumen 600 s. Ablauf der Dosierjobs: Job und Zyklus `failed`, Grund nennt die ungewisse Menge, keine Wiederholung. Messung und Mix: `failed`.
+- Fristen aus den Spalten des Tanks (O-11). Standards: Messung 30 s, Mix Dauer plus 30 s, Dünger und pH-Mittel 120 s, Volumen 600 s. Ablauf der Dosierjobs: Job und Zyklus `failed`, Grund nennt die ungewisse Menge, keine Wiederholung. Messung und Mix: `failed`.
 - Die Überwachung läuft in der Dispatcher-Abfrage, die in Schritt 3.4 vorbereitet wurde.
 - Doppelte Antwort und falsche `request_id` ändern den gespeicherten Job nicht.
 
@@ -863,7 +868,7 @@ Prüfen: ein Zyklus mit Volumen-, EC- und pH-Abweichung im Modus `simulation` en
 
 ## Phase 6 – M6 Weboberfläche
 
-Vor Schritt 6.1 die Annahme zu O-5 bestätigen: Jinja2 und HTMX im selben Prozess. Eine andere Entscheidung ändert diese Phase und lässt die API unverändert.
+O-5 ist entschieden: Jinja2 und HTMX im selben Prozess.
 
 ### Schritt 6.1 – Gerüst der Oberfläche
 
@@ -969,7 +974,7 @@ Status: offen
 
 Ziel: ein fälliger Wasserwechsel ist sichtbar.
 
-Umsetzen, nachdem O-6 bestätigt ist. Annahme dieses Plans: Hinweis, kein Blockieren.
+O-6 ist entschieden: Hinweis, der Zyklus startet trotzdem.
 
 - Vergleich von `last_water_change_at` und `water_change_interval_days`.
 - Der Hinweis erscheint in der Tankübersicht und im Protokoll beim Zyklusstart. Der Zyklus startet trotzdem.
@@ -1030,7 +1035,7 @@ Fertig, wenn Health und Version im Container stimmen und ein Neustart einen zuvo
 
 ## Phase 9 – M9 Hardware
 
-Die Attrappe kommt vor der ersten echten Pumpe. O-7, O-9, O-10 und O-11 werden vor Schritt 9.1 entschieden. Bis dahin gilt: ein Gerät je Tank, Themen aus `tank_id`, Fristen global wie in Kapitel 9.7, Broker ohne TLS nur im abgeschotteten Netz, Temperaturkompensation ausgeschaltet, solange die Quelle nicht ausdrücklich unkorrigierte Werte liefert.
+Die Attrappe kommt vor der ersten echten Pumpe. O-7, O-9, O-10 und O-11 sind am 2026-10-07 entschieden. O-9 ist am selben Tag geändert: Knoten, Punkte und Abläufe, Themen über `device_id`, Broker ohne Anmeldung und ohne TLS, Fristen am Tank, Temperaturkompensation nur bei `ec_uncompensated`.
 
 ### Schritt 9.1 – MQTT-Client im Anwendungsprozess
 
@@ -1040,8 +1045,9 @@ Ziel: der Client lebt und stirbt mit der App, ein zweiter Schreibprozess entsteh
 
 Umsetzen:
 
-- `app/devices/mqtt.py` mit `aiomqtt`, Start und Ende über den Lebenszyklus.
-- Themen aus Kapitel 9.7. Veröffentlichen von Dosierbefehlen mit QoS 1.
+- Modelle `Device`, `DevicePoint`, `DeviceSequence` und `DeviceSequenceStep` mit den Spalten aus Kapitel 9.7, Alembic-Revisionen, Schemas, Services, Router. Die Pflege folgt dem CRUD-Muster aus 9.1.
+- `app/devices/mqtt.py` mit `aiomqtt`, Start und Ende über den Lebenszyklus. Verbindung ohne Anmeldung und ohne TLS.
+- Themen aus Kapitel 9.7. Veröffentlichen von Gerätebefehlen mit QoS 1. Höchstens ein offener Befehl je Gerät.
 - Eingehende Antworten rufen `complete_job` auf. Unaufgeforderte Messwerte werden mit `source=sensor` und ohne `job_id` gespeichert und starten keinen Zyklus.
 - Modus `automatic` ist am Zyklusstart erlaubt und benutzt diese Implementierung.
 
@@ -1073,8 +1079,8 @@ Ziel: echte Aktoren werden nur über den bereits getesteten Weg angesteuert.
 
 Umsetzen:
 
-- Dosierjobs im Modus `automatic` veröffentlichen den Befehl, setzen `request_id` und `timeout_at` und gehen auf `waiting_device`.
-- Temperaturkompensation nach 8.5 nur, wenn die Messquelle als unkompensiert gekennzeichnet ist (O-7). Standard ist aus. Die Formel `ec_25 = ec_measured / (1 + 0.02 * (temperature_c - 25))` liegt in `app/calculations` und hat Unit-Tests, auch solange der Schalter aus ist.
+- Dosierjobs im Modus `automatic` legen die `DeviceCommand`-Jobs aus dem hinterlegten Ablauf an, gehen auf `waiting_device` und lassen den Dispatcher die startbereiten Schritte veröffentlichen. Die Abschlussfolge läuft nach Erfolg und nach Fehler.
+- Temperaturkompensation nach 8.5 nur, wenn `ec_uncompensated` am Gerät `true` ist (O-7). Standard ist `false`. Die Formel `ec_25 = ec_measured / (1 + 0.02 * (temperature_c - 25))` liegt in `app/calculations` und hat Unit-Tests, auch solange der Schalter aus ist.
 - Rundung auf die Auflösung einer konkreten Pumpe bleibt liegen, bis die Pumpe feststeht (Kapitel 17). Bis dahin gilt die eine Dezimalstelle aus Kapitel 8.2.
 
 Fertig, wenn ein automatic-Zyklus gegen die Attrappe durchläuft und ein kompensierter Sensor denselben EC-Wert behält, den er gesendet hat.
@@ -1107,4 +1113,4 @@ Inhalt: Plattform aus 14.3, SSD, Zeitzone, NTP, systemd, Container, Volume, Brok
 
 Nährstoffbilanz, Düngerverträglichkeit, Vorratsverwaltung, Anmeldung, Benachrichtigungen, ein zweiter Prozess, PostgreSQL, Historisierung der Sicherheitsgrenzen, mehrere Rezepturen pro Phase, ein URL-Präfix `/api/v1/`, automatisches Löschen von Messungen, Rundung auf Pumpenauflösung. Begründung jeweils in Kapitel 17.
 
-Stilllegen eines Tanks (O-3) wird nicht nebenbei als Spalte mitgebaut. Dafür gibt es vor Phase 4 eine kurze Entscheidung.
+Stilllegen eines Tanks (O-3) ist entschieden und liegt als `retired_at` am Tank.

@@ -322,10 +322,22 @@ Jobtypen erfordert.
 
 ### Nebenläufigkeit
 
-Es wird immer nur ein Job im gesamten System gleichzeitig ausgeführt. Mehrere Tanks können
-offene Zyklen haben, deren Jobs sich in der Liste abwechseln. Pro Tank darf höchstens ein
-Zyklus im Zustand `running` sein; ein zweiter Startversuch wird mit Statuscode 409
-abgelehnt. Das verhindert, dass zwei Zyklen denselben Tank gegenläufig regeln.
+Es ist immer nur ein Job im Zustand `running`. Mehrere Jobs dürfen gleichzeitig auf einen
+Knoten warten. Der Dispatcher setzt startbereite Gerätejobs nacheinander auf
+`waiting_device`. Ihre Fertigmeldungen treffen in der Reihenfolge ein, in der die Knoten
+fertig werden, nicht in der Startreihenfolge.
+
+Pro Gerät ist höchstens ein Befehl offen. Ein zweiter Schritt an dasselbe Gerät bleibt
+`pending`, bis der offene Befehl gemeldet hat. Schritte an verschiedene Geräte laufen
+gleichzeitig.
+
+Ein Anlagengerät, das ein Ablauf belegt, steht keinem zweiten Dosierjob zur Verfügung. Belegt
+ist es, solange ein Gerätejob dieses Ablaufs `running` oder `waiting_device` ist, und bis
+die Abschlussfolge beendet ist. Ein Messjob eines anderen Tanks darf daneben laufen.
+
+Pro Tank darf höchstens ein Zyklus im Zustand `running` sein. Ein zweiter Startversuch wird
+mit Statuscode 409 abgelehnt. Das verhindert, dass zwei Zyklen denselben Tank gegenläufig
+regeln.
 
 ### Wiederaufsetzen nach einem Abbruch
 
@@ -334,15 +346,14 @@ bleibt dieser Job im Zustand `running`. Ohne Gegenmaßnahme steckt der Zyklus da
 fest, weil der Dispatcher immer nur den ersten fälligen Job nimmt und dieser nie fertig
 wird. Bei einem Raspberry Pi ohne Notstromversorgung ist das kein Randfall.
 
-Beim Start der Anwendung werden daher alle Jobs im Zustand `running` behandelt, und zwar
-nach derselben Unterscheidung wie bei einer abgelaufenen Gerätefrist in 9.7: Entscheidend
-ist, ob der Job etwas Physisches verändert haben könnte.
+Beim Start der Anwendung werden daher alle Jobs in `running` und `waiting_device` behandelt,
+und zwar nach derselben Unterscheidung wie bei einer abgelaufenen Gerätefrist in 9.7:
+Entscheidend ist, ob der Job etwas Physisches verändert haben könnte.
 
 | Jobtyp | Behandlung beim Start |
 |---|---|
-| `MeasureProbe`, `CompareProbe` | zurück auf `pending`. Beide verändern nichts, eine Wiederholung ist gefahrlos. |
-| `DoseFertilizer`, `DosePhAdjuster`, `AdjustVolume` | auf `failed`, Zyklus auf `failed`, manuelle Prüfung erforderlich |
-| `Mix` | auf `failed`. Harmlos, aber der nachfolgende Messzeitpunkt ist nicht mehr verlässlich. |
+| `MeasureProbe`, `CompareProbe` | zurück auf `pending`, auch aus `waiting_device`. Beide verändern nichts, eine Wiederholung ist gefahrlos. |
+| `DoseFertilizer`, `DosePhAdjuster`, `AdjustVolume`, `Mix`, `DeviceCommand` | auf `failed`, Zyklus auf `failed`, manuelle Prüfung erforderlich. Laufende Schritte werden nicht fortgesetzt. Liegt für den Jobtyp ein Ablauf vor, wird seine Abschlussfolge veröffentlicht. |
 
 Die Begründung für die Dosierjobs ist dieselbe wie dort: Nach einem Abbruch ist nicht
 feststellbar, ob die Pumpe gelaufen ist. Weiterrechnen wäre in beide Richtungen falsch, und
@@ -352,11 +363,12 @@ ein automatischer zweiter Versuch könnte die doppelte Menge dosieren.
 |---|---|
 | W-1 | Das Wiederaufsetzen läuft einmalig beim Start, bevor der erste Job ausgeführt oder ein Zeitplan aktiv wird. |
 | W-2 | `failure_reason` nennt den Abbruch als Ursache und die ungewisse Menge. |
-| W-3 | Jobs in `waiting_input`, `waiting_device`, `blocked` und `pending` bleiben unangetastet. Sie halten keinen Prozesszustand, nur Datenbankzustand. |
+| W-3 | Jobs in `waiting_input`, `blocked` und `pending` bleiben unangetastet. Geändert am 2026-10-07: `waiting_device` übersteht einen Neustart nicht. Eine offene Aktorkette hat einen ungewissen physischen Zustand. |
 
-W-3 ist der Grund, weshalb die Wartezustände aus 5.3 einen Neustart unbeschadet
-überstehen: Ein Job, der auf eine Eingabe wartet, wartet nach dem Neustart einfach weiter.
-Nur `running` ist ein flüchtiger Zustand, der an einen lebenden Prozess gebunden ist.
+Ein Job, der auf den Betreiber wartet, wartet nach dem Neustart weiter. Ein Job, der auf
+einen Knoten wartet, tut das nicht. Die Abschlussfolge setzt die beteiligten Aktoren in den
+sicheren Zustand. Kommt der Broker dabei nicht zustande, nennt `failure_reason` das, und
+der Zyklus ist trotzdem `failed`. Die Dosierung wird nicht wiederholt.
 
 ---
 
@@ -470,6 +482,12 @@ Stattdessen wird iterativ in kleinen Schritten korrigiert. Siehe Kapitel 8.4.
 | `max_cycle_duration_minutes` | `Integer` | größer 0, Standard 1440 |
 | `water_change_interval_days` | `Integer` | optional |
 | `last_water_change_at` | `DateTime` | optional |
+| `retired_at` | `DateTime` | optional. Gesetzt heißt stillgelegt (O-3) |
+| `measure_timeout_seconds` | `Integer` | größer 0, Standard 30 |
+| `mix_timeout_margin_seconds` | `Integer` | größer oder gleich 0, Standard 30 |
+| `dose_fertilizer_timeout_seconds` | `Integer` | größer 0, Standard 120 |
+| `dose_ph_adjuster_timeout_seconds` | `Integer` | größer 0, Standard 120 |
+| `adjust_volume_timeout_seconds` | `Integer` | größer 0, Standard 600 |
 
 `source_water_ec` ist der Grund-EC des Füllwassers. Ohne diesen Wert lässt sich die
 Verdünnung beim Auffüllen nicht berechnen. `max_volume_liters` ist die physische
@@ -479,6 +497,12 @@ Die Sicherheitsgrenzen stehen bewusst am Tank und nicht in einer globalen Konfig
 weil ein 30-Liter-Tank andere Grenzen braucht als ein 200-Liter-Tank. Dass sie als Spalten
 in `tanks` liegen und nicht in einer eigenen Tabelle, ist eine bewusste Vereinfachung: Sie
 sind nicht historisiert, eine Änderung gilt sofort für laufende Zyklen.
+
+`retired_at` legt den Tank still, ohne Messverlauf oder Zyklen zu löschen. Ein stillgelegter
+Tank nimmt keinen neuen Zyklus an. Das Löschen bleibt `RESTRICT`, solange Verlauf existiert.
+
+Die fünf Fristspalten sind je Tank gesetzt (O-11). Die Zahlen sind die Standards aus
+Kapitel 9.7. `Mix` läuft über seine Dauer plus `mix_timeout_margin_seconds`.
 
 ## 6.2 Betriebsdaten
 
@@ -587,9 +611,8 @@ Job  1 ──── n Job                  (Folgejobs)
 | `GrowthStage` → `Tank` | `RESTRICT`. |
 
 `RESTRICT` ist bewusst häufiger als `CASCADE`. Protokoll- und Messdaten sollen nicht
-dadurch verloren gehen, dass ein Stammdatensatz entfernt wird. Wer einen Tank wirklich
-loswerden will, muss ihn künftig stilllegen; ein Feld dafür ist in Kapitel 18 als offene
-Entscheidung vermerkt.
+dadurch verloren gehen, dass ein Stammdatensatz entfernt wird. Ein Tank mit Verlauf wird
+stillgelegt, indem `retired_at` gesetzt wird (O-3, entschieden am 2026-10-07).
 
 ## 6.4 Indizes
 
@@ -842,8 +865,10 @@ kommt pro Messquelle ein Schalter hinzu, und die Umrechnung erfolgt nach
 ec_25 = ec_measured / ( 1 + 0,02 × ( temperature_c - 25 ) )
 ```
 
-mit dem üblichen Koeffizienten von 2 Prozent pro Grad. Dieser Schalter ist Teil von M9 und
-in Kapitel 18 als offene Entscheidung vermerkt.
+mit dem üblichen Koeffizienten von 2 Prozent pro Grad. Entschieden am 2026-10-07 (O-7):
+der Schalter `ec_uncompensated` sitzt am Gerät, Standard `false`. Die Formel gilt nur,
+wenn er `true` ist. Handmessungen bleiben unverändert, weil der Betreiber den abgelesenen
+Wert einträgt.
 
 ## 8.6 Sicherheitsgrenzen
 
@@ -1030,6 +1055,7 @@ sofern er eine braucht, und ein Schema für sein Ergebnis.
 | `AdjustVolume` | `tank_id`, `target_volume_liters` | bestätigte Menge | `added_liters`, `predicted_ec` | M4 |
 | `CompensationPH` | `tank_id`, `measurement_id` | — | Richtung, Menge, Folgejobs | M4 |
 | `DosePhAdjuster` | `tank_id`, `ph_adjuster_id`, `amount_ml` | bestätigte Menge | `dosed_ml` | M4 |
+| `DeviceCommand` | `device_id`, `device_point_id`, `command`, optional `depends_on_job_id` | — | Meldung des Knotens, optional die gemessene Menge | M9 |
 
 Der Tank ist bei **jedem** Jobtyp Parameter, auch bei `MeasureProbe`. In der ursprünglichen
 Beschreibung hatte nur `CompareProbe` eine Tanknummer. Ohne Tankbezug an der Messung
@@ -1045,7 +1071,7 @@ Jobs, die eine physische Aktion auslösen — `DoseFertilizer`, `DosePhAdjuster`
 |---|---|
 | `advisory` | Job geht auf `waiting_input`. Der Betreiber führt die Aktion aus und bestätigt. |
 | `simulation` | Job wird sofort ausgeführt, die Wirkung wird berechnet. |
-| `automatic` | Job steuert den Aktor an und wartet auf dessen Rückmeldung. |
+| `automatic` | Der Job legt die Gerätejobs aus dem hinterlegten Ablauf an und wartet, bis dieser Ablauf einschließlich der Abschlussfolge fertig ist. |
 
 Dass auch `Mix` im Modus `advisory` auf eine Bestätigung wartet, ist Absicht. Die
 Stabilisierungszeit wird über `run_after` des nächsten Messjobs abgebildet, aber gerührt
@@ -1232,12 +1258,118 @@ einen Job in einem anderen Zustand wird verworfen und protokolliert, nicht angew
 ### Themenstruktur
 
 ```text
-nsm/tank/{tank_id}/cmd/{action}      Pi  → ESP32
-nsm/tank/{tank_id}/evt/{action}      ESP32 → Pi
+nsm/device/{device_id}/cmd/{action}  Pi  → ESP32
+nsm/device/{device_id}/evt/{action}  ESP32 → Pi
 nsm/device/{device_id}/status        ESP32 → Pi, Lebenszeichen
 ```
 
-Befehl, Beispiel für `nsm/tank/1/cmd/dose_fertilizer`:
+`device_id` ist die `identifier`-Spalte der Gerätetabelle, nicht die `tank_id`.
+Die Tabellen entstehen in M9. Gepflegt werden sie wie Stammdaten, sie gehören nicht zu den
+sieben Ressourcen aus M2.
+
+Der Broker verlangt keine Anmeldedaten und kein TLS (O-10, entschieden am 2026-10-07).
+Das gilt für das abgeschottete Heimnetz.
+
+### Knoten, Punkte und Abläufe
+
+Geändert am 2026-10-07 (O-9). Ein Dosierjob im Modus `automatic` ist kein einzelner Befehl
+an ein Gerät. Er besteht aus Gerätejobs. Die Regelung entscheidet die Menge. Welche Knoten,
+Sensoren und Aktoren dazu laufen und welcher Befehl auf welchen anderen wartet, steht in
+den Stammdaten.
+
+`advisory` und `simulation` legen keine Gerätejobs an. Dort bleibt es bei Bestätigung durch
+den Betreiber beziehungsweise bei der berechneten Wirkung.
+
+#### `devices`
+
+| Spalte | Typ | Bedingungen |
+|---|---|---|
+| `name` | `String(100)` | nicht leer |
+| `identifier` | `String(100)` | nicht leer, eindeutig, das ist die `device_id` im Thema |
+| `tank_id` | `ForeignKey("tanks.id")` | optional. Leer: das Gerät gehört zur Anlage und darf von mehreren Tanks benutzt werden. Gesetzt: das Gerät gehört zu diesem Tank. |
+| `ec_uncompensated` | `Boolean` | Standard `false` (O-7) |
+
+#### `device_points`
+
+| Spalte | Typ | Bedingungen |
+|---|---|---|
+| `device_id` | `ForeignKey("devices.id")` | Pflicht |
+| `name` | `String(100)` | nicht leer, eindeutig je Gerät |
+| `kind` | `String(30)` | `sensor` oder `actuator` |
+
+Ein Punkt ist ein Sensor oder Aktor an einem Knoten, etwa Zähler, Pumpe, Ventil oder
+Schlauchsensor.
+
+#### `device_sequences`
+
+| Spalte | Typ | Bedingungen |
+|---|---|---|
+| `job_type` | `String(30)` | `AdjustVolume`, `DoseFertilizer`, `DosePhAdjuster` oder `Mix` |
+| `tank_id` | `ForeignKey("tanks.id")` | optional. Leer: Ablauf für alle Tanks dieses Jobtyps. Gesetzt: dieser Tank verwendet ihn statt des allgemeinen Ablaufs. |
+| `name` | `String(100)` | nicht leer |
+
+Je Jobtyp höchstens ein Ablauf ohne Tank und höchstens einer je Tank. Fehlt im Modus
+`automatic` ein Ablauf, endet der Dosierjob als `failed` mit einer klaren Meldung.
+
+#### `device_sequence_steps`
+
+| Spalte | Typ | Bedingungen |
+|---|---|---|
+| `sequence_id` | `ForeignKey("device_sequences.id")` | Pflicht |
+| `device_point_id` | `ForeignKey("device_points.id")` | Pflicht |
+| `command` | `String(100)` | nicht leer, der Befehl an den Knoten |
+| `parameter_key` | `String(100)` | optional. Nennt die Menge aus dem übergeordneten Job, etwa `amount_ml`. |
+| `depends_on_step_id` | `ForeignKey("device_sequence_steps.id")` | optional |
+| `phase` | `String(30)` | `run` oder `close` |
+| `reports_amount` | `Boolean` | Standard `false`. Höchstens ein Schritt je Ablauf ist `true`. |
+| `timeout_seconds` | `Integer` | optional, größer 0. Leer: die Frist des übergeordneten Jobtyps am Tank, gemessen ab Eintritt in `waiting_device`. |
+
+Löschen: ein Gerät mit Punkten und ein Punkt, den ein Schritt verwendet, bleiben
+`RESTRICT`. Ein Ablauf löscht seine Schritte per `CASCADE`. Ein Tank mit Geräten oder
+Abläufen bleibt `RESTRICT`.
+
+### Wie ein Ablauf läuft
+
+Der Dosierjob legt für jeden Schritt einen `DeviceCommand` an. `parent_job_id` zeigt auf
+den Dosierjob. Schritte der Phase `run` ohne Abhängigkeit sind sofort startbereit. Ein
+Schritt mit Abhängigkeit wird startbereit, wenn der genannte Schritt `succeeded` ist.
+Schritte der Phase `close` warten, bis die Phase `run` abgeschlossen ist.
+
+Der Dosierjob geht auf `waiting_device`. Der Dispatcher bringt startbereite Gerätejobs
+nacheinander dorthin: Befehl veröffentlichen, `request_id` und `timeout_at` setzen. Pro
+Gerät bleibt es bei einem offenen Befehl. Die Fertigmeldung schließt nur diesen Gerätejob.
+Der Dosierjob wird `succeeded`, wenn alle `run`-Schritte und danach alle `close`-Schritte
+`succeeded` sind. Die Menge im Ergebnis liefert der Schritt mit `reports_amount`.
+
+Schlägt ein `run`-Schritt fehl oder läuft seine Frist ab, wird kein weiterer `run`-Schritt
+gestartet. Noch nicht gestartete `run`-Schritte werden `cancelled`. Die Abschlussfolge
+startet, sobald an dem betroffenen Gerät kein Befehl mehr offen ist. An den übrigen Geräten
+startet sie sofort. Danach enden Dosierjob und Zyklus als `failed`. Hat der Schritt mit
+`reports_amount` nicht `succeeded`, nennt `failure_reason` die ungewisse Menge. Es gibt
+keine zweite Dosierung.
+
+Beispiel für `AdjustVolume`, als Ablauf hinterlegt und nicht im Code festgeschrieben:
+
+```text
+run
+├── Zuführ-ESP, Zähler: auf die Menge scharf          reports_amount
+├── Verteiler, Ventil 1: öffnen
+├── Verteiler, Ventil 2: öffnen
+└── Tank, Ventil 1: öffnen und Schlauchsensor melden
+        └── Zuführ-ESP, Pumpe: ein
+                wartet auf das Ventil und den Schlauchsensor
+
+close
+├── Zuführ-ESP, Pumpe: aus
+└── Ventile zu
+        warten auf Pumpe aus
+```
+
+Zähler und Ventile starten zusammen. Wer von ihnen zuerst fertig meldet, ist dem Knoten
+überlassen. Die Pumpe wartet auf die Meldungen, von denen sie abhängt. Die Abschlussfolge
+läuft nach Erfolg und nach Fehler.
+
+Befehl, Beispiel für `nsm/device/esp-tank-1/cmd/dose_fertilizer`:
 
 ```json
 {
@@ -1249,7 +1381,7 @@ Befehl, Beispiel für `nsm/tank/1/cmd/dose_fertilizer`:
 }
 ```
 
-Antwort auf `nsm/tank/1/evt/dose_fertilizer`:
+Antwort auf `nsm/device/esp-tank-1/evt/dose_fertilizer`:
 
 ```json
 {
@@ -1287,11 +1419,15 @@ werden, weil die Sicherheit der Dosierung davon abhängt.
 
 | Jobtyp | Frist | Bei Ablauf |
 |---|---|---|
-| `MeasureProbe` | 30 s | `failed`. Wiederholung ist unkritisch, erfolgt aber nur durch einen neuen Zyklus. |
-| `Mix` | Dauer plus 30 s | `failed` |
-| `DoseFertilizer` | 120 s | `failed`, ausdrücklich mit Hinweis auf manuelle Prüfung |
-| `DosePhAdjuster` | 120 s | ebenso |
-| `AdjustVolume` | 600 s | ebenso |
+| `MeasureProbe` | `measure_timeout_seconds`, Standard 30 s | `failed`. Wiederholung ist unkritisch, erfolgt aber nur durch einen neuen Zyklus. |
+| `Mix` | Dauer plus `mix_timeout_margin_seconds`, Standard 30 s | `failed` |
+| `DoseFertilizer` | `dose_fertilizer_timeout_seconds`, Standard 120 s | `failed`, ausdrücklich mit Hinweis auf manuelle Prüfung |
+| `DosePhAdjuster` | `dose_ph_adjuster_timeout_seconds`, Standard 120 s | ebenso |
+| `AdjustVolume` | `adjust_volume_timeout_seconds`, Standard 600 s | ebenso |
+| `DeviceCommand` | `timeout_seconds` des Schritts, sonst die Frist des übergeordneten Jobtyps | Schritt `failed`, kein weiterer `run`-Schritt, Abschlussfolge, Dosierjob und Zyklus `failed` |
+
+Die Fristen stehen am Tank (O-11, entschieden am 2026-10-07). Die Tabelle nennt die
+Standards.
 
 Entscheidend ist die Behandlung der Dosierjobs: Bei einer abgelaufenen Frist weiß der Pi
 **nicht**, ob die Pumpe gelaufen ist. Weiterrechnen wäre in beide Richtungen falsch, und
@@ -2094,8 +2230,8 @@ Nacharbeit soll der Neuaufbau vermeiden.
 ## M6 – Weboberfläche
 
 Übersicht aller Tanks mit aktuellen Werten und Bewertung, Messwerteingabe, Jobliste mit
-Bestätigungsschaltflächen, Verlaufsdiagramme, Stammdatenpflege. Die Technologieauswahl
-steht in Kapitel 18 als offene Entscheidung.
+Bestätigungsschaltflächen, Verlaufsdiagramme, Stammdatenpflege. Technologie, entschieden
+am 2026-10-07 (O-5): Jinja2 und HTMX im selben FastAPI-Prozess.
 
 ## M7 – Scheduler
 
@@ -2186,7 +2322,7 @@ Antwort und mit doppelter Antwort. Erst danach wird Hardware angeschlossen.
 | AK-3.20 | Ein `run_after`, das aus der Datenbank gelesen wurde, lässt sich ohne `TypeError` mit `utcnow()` vergleichen. Beide Werte sind zeitzonenbehaftet und in UTC. |
 | AK-3.21 | `GET /cycles/{id}` liefert alle Jobs mit Typ, Zustand, Parametern, Ergebnis und `parent_job_id`, sodass der Ablauf vollständig nachvollziehbar ist. |
 | AK-3.22 | Das Ergebnis von `CompensationEC` enthält Ist-EC, Ziel-EC, Volumen und je Bestandteil Name, Anteil und EC-Wirkung. Nach einer Änderung der Rezeptur bleibt dieses Ergebnis unverändert. |
-| AK-3.23 | Ein Job `DoseFertilizer` im Zustand `running` wird beim Start nach W-1 auf `failed` gesetzt, der Zyklus endet, und der Job wird nicht erneut ausgeführt. Ein `CompareProbe` im Zustand `running` geht auf `pending`. |
+| AK-3.23 | Ein Job `DoseFertilizer` im Zustand `running` oder `waiting_device` wird beim Start nach W-1 auf `failed` gesetzt, der Zyklus endet, und der Job wird nicht erneut ausgeführt. Ein `CompareProbe` im Zustand `running` oder `waiting_device` geht auf `pending`. |
 | AK-3.24 | Ein Zyklus, dessen `started_at` länger als `max_cycle_duration_minutes` zurückliegt, endet vor der nächsten Jobausführung als `failed`, offene Jobs stehen auf `cancelled`. |
 | AK-3.25 | `GET /jobs` ohne Parameter liefert höchstens 100 Einträge und die Gesamtzahl. `limit=5000` wird auf 1000 gekürzt. |
 
@@ -2229,17 +2365,17 @@ Antwort und mit doppelter Antwort. Erst danach wird Hardware angeschlossen.
 
 | Nr. | Frage | Bis wann nötig |
 |---|---|---|
-| O-1 | Welches Düngersystem wird konkret verwendet, und ist eine Dosierreihenfolge erforderlich? `dose_order` ist vorhanden, die Reihenfolge inhaltlich aber nicht festgelegt. | M3 |
-| O-2 | Konkrete Werte für die Sicherheitsgrenzen je Tank. Bis dahin gelten Platzhalter. | M4 |
-| O-3 | Soll ein Tank stillgelegt werden können, statt ihn zu löschen? Siehe 6.3. | M4 |
+| O-1 | ~~Welches Düngersystem wird konkret verwendet, und ist eine Dosierreihenfolge erforderlich?~~ Entschieden am 2026-10-07: kein konkretes System. Der Seed legt A, B und C mit `dose_order` 0, 1 und 2 an. | erledigt |
+| O-2 | ~~Konkrete Werte für die Sicherheitsgrenzen je Tank.~~ Entschieden am 2026-10-07: Platzhalter, bis ein echter Tank andere Werte trägt. Ziel 30 l, Maximum 40 l, `source_water_ec` 0,3, Stabilisierung 120 s, Wasser 20 l, Dünger 500 ml, pH-Mittel 50 ml, 3 Versuche, Zyklusdauer 1440 min. | erledigt |
+| O-3 | ~~Soll ein Tank stillgelegt werden können, statt ihn zu löschen?~~ Entschieden am 2026-10-07: Ja. `retired_at` am Tank. Löschen bleibt `RESTRICT`. Ein stillgelegter Tank nimmt keinen neuen Zyklus an. | erledigt |
 | O-4 | ~~Soll bei Handdosierung die tatsächliche Menge erzwungen abgefragt werden?~~ Entschieden am 2026-10-06: Ja, Pflichtfeld, vorbelegt mit der empfohlenen Menge. Eine stillschweigend übernommene Empfehlung würde die nächste Berechnung auf einen Wert stützen, der nie dosiert wurde. | erledigt |
-| O-5 | Technologie der Weboberfläche: serverseitige Vorlagen mit HTMX oder eine getrennte Anwendung mit eigenem Build. | M6 |
-| O-6 | Soll die Erinnerung an den Wasserwechsel einen Zyklus blockieren oder nur hinweisen? | M7 |
-| O-7 | Wie werden Messgeräte mit eigener Temperaturkompensation von solchen ohne unterschieden? Siehe 8.5. | M9 |
-| O-8 | Soll `projektkonzept.md` auf die rein fachlichen Kapitel gekürzt werden, nachdem die technischen Festlegungen hier stehen? | beim Anlegen des Repositorys |
-| O-9 | Braucht es eine Geräteverwaltung, die festhält, welcher ESP32 welchen Tank bedient? Derzeit wird das Thema allein aus `tank_id` gebildet, was nur bei einem Gerät je Tank funktioniert. | M9 |
-| O-10 | Soll der MQTT-Broker Anmeldedaten und TLS verlangen? Im abgeschotteten Heimnetz verzichtbar, bei erreichbarem Pi nicht. | M9 |
-| O-11 | Sollen die Fristen aus 9.7 je Tank konfigurierbar sein oder global bleiben? Lange Dosierzeiten bei großen Tanks könnten das nötig machen. | M9 |
+| O-5 | ~~Technologie der Weboberfläche: serverseitige Vorlagen mit HTMX oder eine getrennte Anwendung mit eigenem Build.~~ Entschieden am 2026-10-07: Jinja2 und HTMX im selben FastAPI-Prozess. | erledigt |
+| O-6 | ~~Soll die Erinnerung an den Wasserwechsel einen Zyklus blockieren oder nur hinweisen?~~ Entschieden am 2026-10-07: nur Hinweis. Der Zyklus startet trotzdem. | erledigt |
+| O-7 | ~~Wie werden Messgeräte mit eigener Temperaturkompensation von solchen ohne unterschieden?~~ Entschieden am 2026-10-07: `ec_uncompensated` am Gerät, Standard `false`. Die Formel aus 8.5 gilt nur bei `true`. | erledigt |
+| O-8 | Soll `projektkonzept.md` auf die rein fachlichen Kapitel gekürzt werden, nachdem die technischen Festlegungen hier stehen? Die Datei liegt in diesem Repository nicht. | liegen geblieben |
+| O-9 | ~~Braucht es eine Geräteverwaltung, die festhält, welcher ESP32 welchen Tank bedient?~~ Entschieden am 2026-10-07, geändert am selben Tag: Ja. Knoten tragen Sensoren und Aktoren. Ein Knoten gehört zu einem Tank oder zur Anlage. Ein Dosierjob im Modus `automatic` führt den Ablauf aus, der als Stammdaten hinterlegt ist. Schritte ohne Abhängigkeit laufen gleichzeitig, ein Schritt mit Abhängigkeit startet nach der Meldung seines Vorgängers. Die Abschlussfolge läuft nach Erfolg, Fehler, Frist und beim Neustart. | erledigt |
+| O-10 | ~~Soll der MQTT-Broker Anmeldedaten und TLS verlangen?~~ Entschieden am 2026-10-07: ohne Anmeldedaten und ohne TLS, nur im abgeschotteten Heimnetz. | erledigt |
+| O-11 | ~~Sollen die Fristen aus 9.7 je Tank konfigurierbar sein oder global bleiben?~~ Entschieden am 2026-10-07: je Tank, mit den Werten aus 9.7 als Standard. | erledigt |
 
 ---
 
