@@ -63,6 +63,7 @@ Diese Punkte stehen im Pflichtenheft, gehen aber leicht unter, wenn ein Schritt 
 | Dosierreihenfolge (O-1) | Der Seed legt A, B, C mit `dose_order` 0, 1, 2 an. Eine chemische Reihenfolge ist damit nicht entschieden. |
 | Lizenz | Keine Lizenzdatei anlegen, solange keine genannt ist. |
 | CI auf ARM64 | Öffentliches Repository: `test-arm64` bei jedem Push. Privates Repository: `test-arm64` nur auf `main`, `test-x64` bei jedem Push. |
+| Stichprobe auf dem Pi (AK-1.1b) | Entfällt, entschieden am 2026-10-07. Die ARM64-CI deckt die Architektur ab. Eine einmalige Suite auf dem Betriebs-Pi wird nicht gefahren. Prüfungen, die nur das echte Gerät leisten kann, bleiben bei ihrem Meilenstein: Dienststart ab M7, Hardware ab M9. |
 | Startmedium am Pi | Bis M7 die SD-Karte im Pi. USB-SSD erst zum Dauerbetrieb. Einkauf und Preisgrenze stehen in [`hardware.md`](hardware.md). |
 
 Offen bleiben und den Start nicht aufhalten: O-3 (Stilllegen statt Löschen, vor M4 entscheiden), O-7, O-9, O-10, O-11 (alle vor M9). O-4 ist entschieden: die tatsächlich dosierte Menge ist Pflicht und mit der Empfehlung vorbelegt.
@@ -241,7 +242,7 @@ Bezug: Kapitel 9.0, 10.3, 13.4, AK-1.2, AK-1.9, AK-1.10.
 
 Status: erledigt
 
-Ziel: M1 ist gegen AK-1.1 bis AK-1.11 geprüft, soweit die Prüfung nicht den Raspberry Pi oder ein einmaliges CI-Experiment braucht.
+Ziel: M1 ist gegen AK-1.1 bis AK-1.11 geprüft. AK-1.1b entfällt, siehe Entscheidungstabelle.
 
 Umsetzen:
 
@@ -262,11 +263,11 @@ Umsetzen:
 
 Fertig, wenn auf Windows `uv sync`, `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .` und `uv run mypy app` fehlerfrei sind.
 
-Manuell und nicht Teil dieses Schritts:
+Manuell, nachträglich geschlossen:
 
-- AK-1.1 auf Linux-x64 und Linux-ARM64 leistet die CI beim ersten Push.
-- AK-1.1b einmal auf dem Raspberry Pi mit der Plattform aus Kapitel 14.3, am Ende von M1, nicht bei jedem Commit.
-- AK-1.6 einmal auf einem Wegwerf-Branch einen Typfehler einbauen, sehen dass die CI rot wird, den Branch verwerfen. Erst möglich, wenn ein Remote existiert.
+- AK-1.1 auf Linux-x64 und Linux-ARM64: CI-Lauf auf `cc4c987` grün.
+- AK-1.1b entfällt, siehe Entscheidungstabelle.
+- AK-1.6: Wegwerf-Branch mit Typfehler, CI rot an `mypy`, Branch danach gelöscht.
 
 Bezug: Kapitel 10.3, 12.4, 13.2, 13.3, 14.1, AK-1.1 bis AK-1.11.
 

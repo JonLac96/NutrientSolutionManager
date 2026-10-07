@@ -2133,7 +2133,7 @@ Antwort und mit doppelter Antwort. Erst danach wird Hardware angeschlossen.
 | Nr. | Kriterium |
 |---|---|
 | AK-1.1 | `uv sync` und `uv run pytest` laufen auf Windows, auf Linux-x64 und auf Linux-ARM64 fehlerfrei, jeweils aus einem frisch geklonten Projekt. |
-| AK-1.1b | Dieselben Befehle laufen auf dem Raspberry Pi mit der Plattform aus 14.3 fehlerfrei. Einmal zu prüfen, nicht Teil der CI. |
+| AK-1.1b | Entfällt, entschieden am 2026-10-07. Die ARM64-CI ersetzt diese einmalige Stichprobe auf dem Pi. |
 | AK-1.2 | `GET /health` antwortet mit 200. |
 | AK-1.3 | Ein Test belegt, dass ein verletzter Fremdschlüssel einen Datenbankfehler auslöst. Das beweist, dass `PRAGMA foreign_keys` wirkt. |
 | AK-1.4 | Ein Test belegt, dass die Testdatenbank nach dem Testlauf keine Spuren in `nsm.db` hinterlässt. |
